@@ -1,53 +1,28 @@
-from fastapi import FastAPI, Form, Request
+from fastapi import FastAPI, Form
 from fastapi.responses import PlainTextResponse
-from twilio.twiml.messaging_response import MessagingResponse
+import uvicorn
 
 app = FastAPI()
 
-# Temporary in-memory user state
-user_states = {}
-
 @app.post("/webhook")
 async def whatsapp_webhook(
-    request: Request,
     From: str = Form(...),
-    Body: str = Form(...),
-    NumMedia: str = Form(default="0")
+    Body: str = Form(...)
 ):
-    user_id = From
-    message = Body.strip().lower()
-    num_media = int(NumMedia)
-    resp = MessagingResponse()
-
-    state = user_states.get(user_id, "start")
-
-    if state == "start":
-        resp.message("Hi! Which country would you like to visit?")
-        user_states[user_id] = "waiting_for_country"
-
-    elif state == "waiting_for_country":
-        resp.message("Great choice! Please upload a clear photo of your passport.")
-        user_states[user_id] = "waiting_for_passport"
-
-    elif state == "waiting_for_passport":
-        if num_media > 0:
-            passport_url = (await request.form())["MediaUrl0"]
-            # TODO: Save/download passport_url
-            resp.message("Thanks! Now upload your supporting documents.")
-            user_states[user_id] = "waiting_for_documents"
-        else:
-            resp.message("Please upload your passport as an image.")
-
-    elif state == "waiting_for_documents":
-        if num_media > 0:
-            doc_url = (await request.form())["MediaUrl0"]
-            # TODO: Save/download doc_url
-            resp.message("Thank you! We’ll review and get back to you soon.")
-            user_states[user_id] = "done"
-        else:
-            resp.message("Please upload your supporting documents.")
-
+    # Log incoming message
+    print(f"📩 Message from {From}: {Body}")
+    
+    # Simple logic to reply
+    if "hello" in Body.lower():
+        response_text = "Hello! 👋 How can I help you with your visa application?"
+    elif "visa" in Body.lower():
+        response_text = "Please tell me which country you want to visit."
     else:
-        resp.message("You're all set. We'll contact you shortly.")
+        response_text = f"You said: {Body}. I'm still learning 😊"
 
-    return PlainTextResponse(str(resp), media_type="application/xml")
+    # Twilio expects plain text response for WhatsApp
+    return PlainTextResponse(content=response_text)
+
+# For local testing
+if __name__ == "__main__":
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
