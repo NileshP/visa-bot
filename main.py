@@ -103,6 +103,7 @@ async def extract_passport_info(image_url: str) -> dict:
             image_url,
             auth=(twilio_sid, twilio_auth_token)
         )
+        print(image_response)
         image_bytes = image_response.content
         image_base64 = base64.b64encode(image_bytes).decode("utf-8")
 
@@ -123,7 +124,7 @@ async def extract_passport_info(image_url: str) -> dict:
                         },
                         {
                             "inlineData": {
-                                "mimeType": "image/jpeg",
+                                "mimeType": "image/png",
                                 "data": image_base64
                             }
                         }
