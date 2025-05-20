@@ -4,6 +4,7 @@ from twilio.twiml.messaging_response import MessagingResponse
 import httpx
 import os
 import psycopg2
+import base64
 
 app = FastAPI()
 
@@ -11,7 +12,7 @@ app = FastAPI()
 user_states = {}
 user_data = {}
 
-# PostgreSQL connection (update with Railway credentials or env variables)
+# PostgreSQL connection
 conn = psycopg2.connect(
     dbname=os.getenv("POSTGRES_DB"),
     user=os.getenv("POSTGRES_USER"),
@@ -20,6 +21,19 @@ conn = psycopg2.connect(
     port=os.getenv("POSTGRES_PORT", "5432")
 )
 cursor = conn.cursor()
+
+# Make sure the table exists
+cursor.execute("""
+    CREATE TABLE IF NOT EXISTS visa_applications (
+        id SERIAL PRIMARY KEY,
+        user_id TEXT,
+        country TEXT,
+        first_name TEXT,
+        last_name TEXT,
+        validity DATE
+    );
+""")
+conn.commit()
 
 @app.post("/webhook")
 async def whatsapp_webhook(
@@ -50,7 +64,6 @@ async def whatsapp_webhook(
             passport_url = form["MediaUrl0"]
             resp.message("Thanks! Processing your passport details...")
 
-            # Call Gemini API to extract data
             extracted_info = await extract_passport_info(passport_url)
 
             if extracted_info:
@@ -66,8 +79,7 @@ async def whatsapp_webhook(
     elif state == "waiting_for_documents":
         form = await request.form()
         if num_media > 0:
-            doc_url = form["MediaUrl0"]
-            # You can choose to store it too
+            # You can also store supporting docs if needed
             resp.message("Thank you! We’ll review and get back to you soon.")
             user_states[user_id] = "done"
         else:
@@ -80,24 +92,30 @@ async def whatsapp_webhook(
 
 
 async def extract_passport_info(image_url: str) -> dict:
-    # Download image content
     async with httpx.AsyncClient() as client:
         image_response = await client.get(image_url)
         image_bytes = image_response.content
+        image_base64 = base64.b64encode(image_bytes).decode("utf-8")
 
-        # Send to Gemini API (replace with real API call)
         headers = {
-            "Authorization": f"Bearer {os.getenv('GEMINI_API_KEY')}",
             "Content-Type": "application/json"
         }
-        data = {
+        payload = {
             "contents": [
                 {
                     "parts": [
                         {
-                            "inline_data": {
-                                "mime_type": "image/jpeg",
-                                "data": image_bytes.decode("latin1")  # For raw bytes, better to use base64
+                            "text": (
+                                "Extract the following passport details from this image:\n"
+                                "- First Name\n"
+                                "- Last Name\n"
+                                "- Validity Date (passport expiry)"
+                            )
+                        },
+                        {
+                            "inlineData": {
+                                "mimeType": "image/jpeg",
+                                "data": image_base64
                             }
                         }
                     ]
@@ -105,18 +123,27 @@ async def extract_passport_info(image_url: str) -> dict:
             ]
         }
 
-        response = await client.post("https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-vision:generateContent", headers=headers, json=data)
+        gemini_url = "https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent"
+        response = await client.post(gemini_url, params={"key": os.getenv("GEMINI_API_KEY")}, json=payload)
+
         if response.status_code == 200:
-            # Extract and return relevant fields
-            result = response.json()
-            # TODO: Replace with actual parsing logic
-            return {
-                "first_name": "Sample",
-                "last_name": "Name",
-                "validity": "2030-01-01"
-            }
+            try:
+                result = response.json()
+                text = result["candidates"][0]["content"]["parts"][0]["text"]
+
+                # Basic parsing example - improve with regex or parsing logic
+                lines = text.splitlines()
+                parsed = {
+                    "first_name": lines[0].split(":")[-1].strip() if len(lines) > 0 else "Unknown",
+                    "last_name": lines[1].split(":")[-1].strip() if len(lines) > 1 else "Unknown",
+                    "validity": lines[2].split(":")[-1].strip() if len(lines) > 2 else "2030-01-01"
+                }
+                return parsed
+            except Exception as e:
+                print("Parsing error:", e)
+                return {}
         else:
-            print("Gemini error:", response.text)
+            print("Gemini API error:", response.text)
             return {}
 
 
