@@ -96,6 +96,7 @@ async def whatsapp_webhook(
 async def extract_passport_info(image_url: str) -> dict:
     twilio_sid = os.getenv("TWILIO_ACCOUNT_SID")
     twilio_auth_token = os.getenv("TWILIO_AUTH_TOKEN")
+    print("started executing passport info")
     async with httpx.AsyncClient() as client:
         
         # Download media with Twilio authentication
