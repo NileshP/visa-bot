@@ -106,10 +106,6 @@ async def extract_passport_info(image_url: str) -> dict:
             image_url,
             auth=(twilio_sid, twilio_auth_token)
         )
-
-        for h in response.history:
-            print(h.status_code, h.headers.get("location"))
-
         print("Status Code",image_response.status_code)
         image_bytes = image_response.content
         image_base64 = base64.b64encode(image_bytes).decode("utf-8")
