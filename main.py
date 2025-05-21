@@ -5,6 +5,7 @@ import httpx
 import os
 import psycopg2
 import base64
+import re
 
 app = FastAPI()
 
@@ -151,7 +152,7 @@ async def extract_passport_info(image_url: str) -> dict:
                 print(text)
 
                 parsed = parse_passport_info(text)
-                
+
                 return parsed
             except Exception as e:
                 print("Parsing error:", e)
