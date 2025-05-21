@@ -123,9 +123,9 @@ async def extract_passport_info(image_url: str) -> dict:
                         {
                             "text": (
                                 "Extract the following passport details from this image, give output in json format:\n"
-                                "- First Name\n"
-                                "- Last Name\n"
-                                "- Validity Date (passport expiry)"
+                                "- First Name as first_name\n"
+                                "- Last Name as last_name\n"
+                                "- Validity Date (passport expiry) as validity"
                             )
                         },
                         {
@@ -163,17 +163,19 @@ async def extract_passport_info(image_url: str) -> dict:
 
 def parse_passport_info(text: str) -> dict:
     try:
-        first_name_match = re.search(r"First Name\s*:\s*(.+)", text)
-        last_name_match = re.search(r"Last Name\s*:\s*(.+)", text)
-        validity_match = re.search(r"Validity Date\s*:\s*(.+)", text)
+        # Extract JSON block using regex
+        json_match = re.search(r"\{.*\}", text, re.DOTALL)
+        if json_match:
+            json_str = json_match.group(0)
+            # Load as dictionary
+            raw_data = json.loads(json_str)
 
-        return {
-            "first_name": first_name_match.group(1).strip() if first_name_match else "Unknown",
-            "last_name": last_name_match.group(1).strip() if last_name_match else "Unknown",
-            "validity": validity_match.group(1).strip() if validity_match else "Unknown"
-        }
+            return raw_data
+        else:
+            print("No JSON found in response.")
+            return {}
     except Exception as e:
-        print("Parsing error:", e)
+        print("Error parsing JSON from Gemini response:", e)
         return {}
 
 def store_user_data(user_id: str, data: dict):
