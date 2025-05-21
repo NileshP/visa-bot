@@ -163,19 +163,14 @@ async def extract_passport_info(image_url: str) -> dict:
 
 def parse_passport_info(text: str) -> dict:
     try:
-        # Extract JSON block using regex
-        json_match = re.search(r"\{.*\}", text, re.DOTALL)
-        if json_match:
-            json_str = json_match.group(0)
-            # Load as dictionary
-            raw_data = json.loads(json_str)
-
-            return raw_data
-        else:
-            print("No JSON found in response.")
-            return {}
+        lines = text.splitlines()
+        json_str = "\n".join(lines[1:-1])  # Skip first and last line
+        print("Json Str", json_str)
+        data = json.loads(json_str)
+        print("Data", data)
+        return data
     except Exception as e:
-        print("Error parsing JSON from Gemini response:", e)
+        print("Simple JSON parse error:", e)
         return {}
 
 def store_user_data(user_id: str, data: dict):
