@@ -68,6 +68,8 @@ async def whatsapp_webhook(
 
             extracted_info = await extract_passport_info(passport_url)
 
+            print(extracted_info)
+
             if extracted_info:
                 user_data[user_id].update(extracted_info)
                 store_user_data(user_id, user_data[user_id])
