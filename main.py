@@ -97,6 +97,8 @@ async def extract_passport_info(image_url: str) -> dict:
     twilio_sid = os.getenv("TWILIO_ACCOUNT_SID")
     twilio_auth_token = os.getenv("TWILIO_AUTH_TOKEN")
     print("started executing passport info")
+    print(twilio_sid)
+    print(twilio_auth_token)
     async with httpx.AsyncClient() as client:
         
         # Download media with Twilio authentication
@@ -104,7 +106,7 @@ async def extract_passport_info(image_url: str) -> dict:
             image_url,
             auth=(twilio_sid, twilio_auth_token)
         )
-        print(image_response)
+        print(image_response.status_code)
         image_bytes = image_response.content
         image_base64 = base64.b64encode(image_bytes).decode("utf-8")
 
