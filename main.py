@@ -6,6 +6,7 @@ import os
 import psycopg2
 import base64
 import re
+import json
 
 app = FastAPI()
 
