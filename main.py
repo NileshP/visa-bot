@@ -121,7 +121,7 @@ async def extract_passport_info(image_url: str) -> dict:
                     "parts": [
                         {
                             "text": (
-                                "Extract the following passport details from this image:\n"
+                                "Extract the following passport details from this image, give output in json format:\n"
                                 "- First Name\n"
                                 "- Last Name\n"
                                 "- Validity Date (passport expiry)"
@@ -145,6 +145,10 @@ async def extract_passport_info(image_url: str) -> dict:
             try:
                 result = response.json()
                 text = result["candidates"][0]["content"]["parts"][0]["text"]
+
+                print("text from gemini")
+
+                print(text)
 
                 # Basic parsing example - improve with regex or parsing logic
                 lines = text.splitlines()
