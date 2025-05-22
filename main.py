@@ -63,9 +63,9 @@ async def whatsapp_webhook(
     elif state == "waiting_for_passport":
         form = await request.form()
         if num_media > 0:
-            print("inside num media")
+            #print("inside num media")
             passport_url = form["MediaUrl0"]
-            print(passport_url)
+            #print(passport_url)
             resp.message("Thanks! Processing your passport details...")
 
             extracted_info = await extract_passport_info(passport_url)
@@ -75,7 +75,7 @@ async def whatsapp_webhook(
             if extracted_info:
                 user_data[user_id].update(extracted_info)
                 store_user_data(user_id, user_data[user_id])
-                resp.message("Passport info saved! Please upload supporting documents.")
+                resp.message(f"Hi {user_data[user_id]["first_name"]} {user_data[user_id]["last_name"]} Passport info saved! Please upload supporting documents.")
                 user_states[user_id] = "waiting_for_documents"
             else:
                 resp.message("Sorry, couldn't extract info. Please try again.")
