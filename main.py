@@ -198,7 +198,7 @@ def store_user_data(user_id: str, data: dict):
     try:
         cursor.execute("""
             INSERT INTO visa_applications (user_id, country, first_name, last_name, validity, passport_number, date_of_birth)
-            VALUES (%s, %s, %s, %s, %s)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
         """, (user_id, data["country"], data["first_name"], data["last_name"], data["validity"], data["passport_number"], data["date_of_birth"]))
         conn.commit()
     except Exception as e:
